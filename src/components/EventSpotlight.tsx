@@ -1,0 +1,89 @@
+"use client";
+
+// Event Spotlight — flier on the left, ticketing CTA on the right.
+// Members see the "Purchase tickets" gold button; applicants see
+// the apply CTA and a sign-in nudge.
+
+import type { Event } from "@/lib/event";
+import type { Member } from "./Nav";
+import { formatLongDate, nightsUntil } from "@/lib/format";
+
+export default function EventSpotlight({
+  event,
+  member,
+  onApply,
+  onSignIn,
+}: {
+  event: Event;
+  member: Member | null;
+  onApply: () => void;
+  onSignIn: () => void;
+}) {
+  const ticketsUrl = event.ticketUrl || "#";
+  const posterSrc = event.posterUrl || "/assets/lovers-poster.jpeg";
+  const fullDate = formatLongDate(event.date);
+  const stampLine = `${fullDate} · ${event.city || "Las Vegas"}`;
+
+  return (
+    <section className="event" id="event" data-screen-label="Event spotlight">
+      <div className="event-head">
+        <div className="section-eyebrow">
+          <span className="num">III</span>
+          <span className="line" />
+          <span className="lbl">{member ? "Members · early access" : "The Next Gathering"}</span>
+        </div>
+        <span className="mono event-countdown">{nightsUntil(event.date)} nights away</span>
+      </div>
+
+      <div className="event-flier-wrap">
+        <div className="event-flier">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={posterSrc} alt={`${event.roman} · ${event.name}`} />
+        </div>
+        <div className="event-flier-side">
+          <div className="ef-stamp">{stampLine}</div>
+          <h2 className="display ef-title">
+            {event.roman} · <em>{event.name}</em>
+          </h2>
+          {member ? (
+            <>
+              <div className="ef-member-badge">
+                <span className="ef-mb-mark">✦</span> Admitted member · {member.name}
+              </div>
+              <p className="ef-lede">
+                Your seat is yours to claim. Tickets are released to members two weeks
+                before the door opens to applicants.
+              </p>
+              <a className="btn-gold ef-cta" href={ticketsUrl} target="_blank" rel="noopener noreferrer">
+                Purchase tickets <span className="arr">→</span>
+              </a>
+              <div className="ef-meta">
+                <div><span className="k">Hosts</span><span className="v">{event.hosts}</span></div>
+                <div><span className="k">Attire</span><span className="v">Dress to impress</span></div>
+                <div><span className="k">Address</span><span className="v">Sent with ticket</span></div>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="ef-lede">
+                {event.tagline ? (
+                  <em>{event.tagline}</em>
+                ) : (
+                  "A private gathering. Tickets are released to admitted members only."
+                )}
+              </p>
+              <button className="btn-gold ef-cta" onClick={onApply}>
+                Begin your application <span className="arr">→</span>
+              </button>
+              <div className="ef-sep" />
+              <div className="ef-not-member">
+                Already admitted?
+                <button className="ef-apply-link" onClick={onSignIn}>Member sign in →</button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
