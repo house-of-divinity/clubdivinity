@@ -19,6 +19,17 @@ import Footer from "./Footer";
 import SignInModal from "./SignInModal";
 import TermsModal from "./TermsModal";
 import { OrnamentDivider } from "./Ornaments";
+import ApplicantStatusOverlay, {
+  type ApplicantStatus,
+} from "./ApplicantStatusOverlay";
+
+type User = { id: string; email: string; isAdmin: boolean };
+type Application = {
+  ref: string;
+  status: ApplicantStatus;
+  submittedAt: string;
+  decidedAt: string | null;
+};
 
 export default function HomeClient() {
   const router = useRouter();
@@ -26,7 +37,9 @@ export default function HomeClient() {
   const [replayKey, setReplayKey] = useState(0);
   const [signInOpen, setSignInOpen] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
   const [member, setMember] = useState<Member | null>(null);
+  const [application, setApplication] = useState<Application | null>(null);
 
   // Lock body scroll while the gate is up.
   useEffect(() => {
@@ -34,9 +47,9 @@ export default function HomeClient() {
     return () => { document.body.style.overflow = ""; };
   }, [gateOpen]);
 
-  // Pull the current member from the API on mount. Subscribe to
-  // Supabase auth state changes so sign-in / sign-out updates the
-  // nav and the section-level UI live.
+  // Pull the current user/member/application from the API on mount,
+  // and subscribe to auth changes so sign-in / sign-out updates the
+  // nav + section UI + applicant overlay live.
   useEffect(() => {
     let cancelled = false;
 
@@ -44,10 +57,13 @@ export default function HomeClient() {
       try {
         const res = await fetch("/api/me", { cache: "no-store" });
         if (!res.ok) return;
-        const { member } = await res.json();
-        if (!cancelled) setMember(member);
+        const data = await res.json();
+        if (cancelled) return;
+        setUser(data.user);
+        setMember(data.member);
+        setApplication(data.application);
       } catch {
-        // ignore — stay anonymous
+        /* stay anonymous on error */
       }
     };
 
@@ -71,12 +87,20 @@ export default function HomeClient() {
   const signOut = async () => {
     const supabase = createSupabaseBrowserClient();
     await supabase.auth.signOut();
+    setUser(null);
     setMember(null);
+    setApplication(null);
   };
   const replayGate = () => {
     setReplayKey((k) => k + 1);
     setGateOpen(true);
   };
+
+  // Show the applicant overlay when the user is signed in but
+  // (a) isn't an admitted member and (b) isn't an admin (admins
+  // without member rows still get the synthesised member profile
+  // from /api/me, so they bypass this).
+  const showApplicantOverlay = !!user && !member;
 
   return (
     <>
@@ -116,6 +140,13 @@ export default function HomeClient() {
         <EntranceGate
           replayKey={replayKey}
           onEnter={() => setGateOpen(false)}
+        />
+      )}
+      {showApplicantOverlay && (
+        <ApplicantStatusOverlay
+          application={application}
+          email={user!.email}
+          onApply={openApply}
         />
       )}
     </>
