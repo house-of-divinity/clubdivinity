@@ -13,7 +13,7 @@ export default async function EventsPage() {
   const { data: events } = await supabase
     .from("events")
     .select(
-      "id, slug, roman, name, tagline, starts_at, ticket_url, capacity_souls, status, poster_url, hosts",
+      "id, slug, roman, name, tagline, starts_at, ticket_url, capacity_label, capacity_souls, status, poster_url, hosts",
     )
     .order("starts_at", { ascending: true });
 
@@ -49,8 +49,12 @@ export default async function EventsPage() {
                   <span className="v">{formatDate(ev.starts_at)}</span>
                 </div>
                 <div>
-                  <span className="k">Capacity</span>
-                  <span className="v">{ev.capacity_souls ?? "—"} souls</span>
+                  <span className="k">Capacity (public)</span>
+                  <span className="v">{ev.capacity_label ?? "—"}</span>
+                </div>
+                <div>
+                  <span className="k">Capacity (internal)</span>
+                  <span className="v small">{ev.capacity_souls ?? "—"} seats · hidden from public</span>
                 </div>
                 {ev.hosts && (
                   <div>

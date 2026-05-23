@@ -15,7 +15,8 @@ type EventRow = {
   starts_at: string;
   location_city: string | null;
   ticket_url: string | null;
-  capacity_souls: number | null;
+  capacity_label: string | null;     // public display label
+  capacity_souls: number | null;     // internal seat count (admin only)
   hosts: string[] | null;
   status: string;
   poster_url: string | null;
@@ -48,7 +49,8 @@ export default function EventEditor({ event }: { event: EventRow }) {
     startsAtLocal: toLocalDateTimeInput(event.starts_at),
     locationCity: event.location_city ?? "Las Vegas",
     ticketUrl: event.ticket_url ?? "",
-    capacitySouls: event.capacity_souls?.toString() ?? "",
+    capacityLabel: event.capacity_label ?? "",
+    capacitySeats: event.capacity_souls?.toString() ?? "",
     hosts: (event.hosts ?? []).join(", "),
     status: event.status,
     posterUrl: event.poster_url ?? "",
@@ -82,7 +84,8 @@ export default function EventEditor({ event }: { event: EventRow }) {
           startsAt: new Date(form.startsAtLocal).toISOString(),
           locationCity: form.locationCity.trim(),
           ticketUrl: form.ticketUrl.trim() || null,
-          capacitySouls: form.capacitySouls ? Number(form.capacitySouls) : null,
+          capacityLabel: form.capacityLabel.trim() || null,
+          capacitySeats: form.capacitySeats ? Number(form.capacitySeats) : null,
           hosts: form.hosts.split(",").map((s) => s.trim()).filter(Boolean),
           status: form.status,
           posterUrl: form.posterUrl.trim() || null,
@@ -144,25 +147,39 @@ export default function EventEditor({ event }: { event: EventRow }) {
         />
       </FormField>
 
-      <div className="ev-row-2">
-        <FormField label="Starts at" required>
-          <input
-            type="datetime-local"
-            value={form.startsAtLocal}
-            onChange={(e) => set("startsAtLocal", e.target.value)}
-            required
-          />
-        </FormField>
-        <FormField label="Capacity (souls)">
-          <input
-            type="number"
-            min={0}
-            value={form.capacitySouls}
-            onChange={(e) => set("capacitySouls", e.target.value)}
-            placeholder="60"
-          />
-        </FormField>
-      </div>
+      <FormField label="Starts at" required>
+        <input
+          type="datetime-local"
+          value={form.startsAtLocal}
+          onChange={(e) => set("startsAtLocal", e.target.value)}
+          required
+        />
+      </FormField>
+
+      <FormField
+        label="Capacity — public label"
+        hint="Free-form text shown on the website (e.g. &quot;Intimate&quot;, &quot;By invitation only&quot;). Leave blank to show nothing publicly."
+      >
+        <input
+          type="text"
+          value={form.capacityLabel}
+          onChange={(e) => set("capacityLabel", e.target.value)}
+          placeholder="Intimate"
+        />
+      </FormField>
+
+      <FormField
+        label="Capacity — internal seat count (admin only — NEVER shown publicly)"
+        hint="Real venue capacity. Used to draw the &quot;room is filling&quot; bar in Overview and match against ticket sales. Applicants and members never see this number."
+      >
+        <input
+          type="number"
+          min={0}
+          value={form.capacitySeats}
+          onChange={(e) => set("capacitySeats", e.target.value)}
+          placeholder="60"
+        />
+      </FormField>
 
       <FormField label="Hosts" hint="Comma-separated. Shows in hero meta + the 14-day reminder email.">
         <input

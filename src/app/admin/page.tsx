@@ -99,7 +99,7 @@ export default async function AdminOverview() {
       {nextEvent.data && nextEvent.data.capacity_souls && (
         <div className="admin-band">
           <div className="band-head">
-            <div className="band-eye">The room is filling</div>
+            <div className="band-eye">The room is filling — internal capacity</div>
             <div className="band-num">
               {ticketsSold} / {nextEvent.data.capacity_souls}
             </div>

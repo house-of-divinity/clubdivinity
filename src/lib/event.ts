@@ -1,7 +1,5 @@
-// Static event data — will be replaced with a Supabase query
-// once the database is wired up. Mirrors what the prototype's
-// admin dashboard puts in localStorage (cd_events) by default,
-// and what DATA_MODEL.md seeds for the first event.
+// Static event data — replaced with a Supabase query once the
+// database is wired. Mirrors the seeded VI · The Lovers row.
 
 export type Event = {
   id: string;
@@ -15,7 +13,13 @@ export type Event = {
   posterUrl?: string;
   ticketUrl?: string;
   hosts?: string;
-  capacity?: string;        // free-form ("Intimate", "60 souls", etc.)
+  // Public-facing capacity label. Shown on the website if set.
+  // Free-form: "Intimate", "By invitation only", etc.
+  capacityLabel?: string;
+  // Internal seat count — ADMIN ONLY, never shown publicly.
+  // Used to draw the "room is filling" capacity bar in admin and
+  // to detect sold-out when matched against event_tickets.
+  capacityNumber?: number;
   status?: "upcoming" | "past" | "cancelled" | "sold-out";
 };
 
@@ -31,7 +35,8 @@ export const NEXT_EVENT: Event = {
   posterUrl: "/assets/lovers-poster.jpeg",
   ticketUrl: "https://divinity.ticketspice.com/vi-the-lovers",
   hosts: "Madison Wilde · Bree Sky",
-  capacity: "60 souls",
+  capacityLabel: undefined,
+  capacityNumber: 60,
   status: "upcoming",
 };
 
