@@ -74,7 +74,7 @@ export default function SignInModal({
 
   const submitCode = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (code.length < 6 || busy) return;
+    if (code.length < 6 || busy) return;     // Supabase issues 6-10 digit codes
     setBusy(true);
     setError(null);
     try {
@@ -176,22 +176,22 @@ export default function SignInModal({
 
             <form className="signin-form" onSubmit={submitCode}>
               <div className="field full">
-                <label>6-digit code</label>
+                <label>Sign-in code</label>
                 <input
                   ref={codeInputRef}
                   type="text"
                   inputMode="numeric"
                   pattern="[0-9]*"
-                  maxLength={6}
+                  maxLength={10}
                   autoComplete="one-time-code"
-                  placeholder="000000"
+                  placeholder="enter the code from the email"
                   value={code}
-                  onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 10))}
                   style={{
                     fontFamily: "var(--font-mono)",
                     fontStyle: "normal",
-                    fontSize: 28,
-                    letterSpacing: "0.3em",
+                    fontSize: 24,
+                    letterSpacing: "0.25em",
                     textAlign: "center",
                   }}
                 />
