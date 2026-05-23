@@ -86,9 +86,24 @@ export default function Nav({
                   <div className="nmm-name">{member.name}</div>
                   <div className="nmm-email">{member.email}</div>
                 </div>
-                <a className="nmm-link" href="#event">Purchase tickets →</a>
-                <a className="nmm-link" href="#" onClick={(e) => e.preventDefault()}>My profile</a>
-                <a className="nmm-link" href="#" onClick={(e) => e.preventDefault()}>Past gatherings</a>
+                {member.isAdmin && (
+                  <a
+                    className="nmm-link nmm-link-gold"
+                    href="/admin"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    ✦ Curator&apos;s view →
+                  </a>
+                )}
+                <a className="nmm-link" href="#event" onClick={() => setMenuOpen(false)}>
+                  Purchase tickets →
+                </a>
+                <a className="nmm-link" href="/me" onClick={() => setMenuOpen(false)}>
+                  My profile
+                </a>
+                <a className="nmm-link" href="/me#gatherings" onClick={() => setMenuOpen(false)}>
+                  Past gatherings
+                </a>
                 <button className="nmm-link nmm-out" onClick={() => { onSignOut(); setMenuOpen(false); }}>
                   Sign out
                 </button>
