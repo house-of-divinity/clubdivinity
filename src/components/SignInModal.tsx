@@ -1,21 +1,22 @@
 "use client";
 
-// Sign-in via Supabase magic link AND 6-digit OTP code.
+// Sign-in via Supabase 8-digit OTP code.
 //
-// Why both:
-// The PKCE magic-link flow breaks when users open the email in an
-// in-app browser (Gmail iOS, Outlook mobile) — the code_verifier
-// is stored in their normal browser but the email's link opens in
-// the email-app's webview, which can't access that storage. The
-// link clicks but no session is set.
+// The link-based magic-link UX gets eaten by Gmail's in-app browser
+// (PKCE code_verifier lives in the user's main browser, but the
+// link opens in the email app's webview which has no access to it).
+// Code-only sidesteps the whole class of issues — user types the
+// code into our site in any browser → verifyOtp() sets the session.
 //
-// The 6-digit code path sidesteps this entirely: user types the
-// code into our website in their normal browser → verifyOtp() sets
-// the session in that browser. Works on any device combo.
+// We also gate signInWithOtp behind /api/auth/check so we don't
+// blast magic-link emails at random unknown addresses (Supabase
+// would otherwise auto-create accounts for them).
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
+
+type Stage = "email" | "code" | "not-recognized";
 
 export default function SignInModal({
   onClose,
@@ -29,7 +30,7 @@ export default function SignInModal({
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [stage, setStage] = useState<"email" | "code">("email");
+  const [stage, setStage] = useState<Stage>("email");
   const codeInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -43,19 +44,37 @@ export default function SignInModal({
     };
   }, [onClose]);
 
-  // Auto-focus the code input when we switch to the code stage.
   useEffect(() => {
     if (stage === "code") {
       setTimeout(() => codeInputRef.current?.focus(), 50);
     }
   }, [stage]);
 
-  const sendLink = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const sendCode = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     if (!email || busy) return;
     setBusy(true);
     setError(null);
     try {
+      // Pre-check: is this email a member, applicant, or admin?
+      const checkRes = await fetch("/api/auth/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const check = await checkRes.json().catch(() => ({}));
+      if (!check.allowed) {
+        if (check.reason === "invalid-email") {
+          setError("That doesn't look like a valid email.");
+        } else {
+          // Not a member, applicant, or admin — surface the
+          // "not recognised" screen instead of sending a link.
+          setStage("not-recognized");
+        }
+        return;
+      }
+
+      // Email is recognised — request the OTP.
       const supabase = createSupabaseBrowserClient();
       const { error } = await supabase.auth.signInWithOtp({
         email,
@@ -66,7 +85,7 @@ export default function SignInModal({
       if (error) throw error;
       setStage("code");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't send the link.");
+      setError(err instanceof Error ? err.message : "Couldn't send the code.");
     } finally {
       setBusy(false);
     }
@@ -74,7 +93,7 @@ export default function SignInModal({
 
   const submitCode = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (code.length < 6 || busy) return;     // Supabase issues 6-10 digit codes
+    if (code.length < 6 || busy) return;
     setBusy(true);
     setError(null);
     try {
@@ -97,7 +116,7 @@ export default function SignInModal({
   const resendCode = async () => {
     setCode("");
     setError(null);
-    await sendLink({ preventDefault: () => {} } as React.FormEvent);
+    await sendCode();
   };
 
   return (
@@ -112,13 +131,9 @@ export default function SignInModal({
             <h2 className="signin-title">Member <em>sign in</em></h2>
             <p className="signin-sub">
               For applicants who&apos;ve been admitted. New here? Apply below.
-              <br />
-              <span className="signin-hint">
-                We&apos;ll email you a sign-in link and a 6-digit code.
-              </span>
             </p>
 
-            <form className="signin-form" onSubmit={sendLink}>
+            <form className="signin-form" onSubmit={sendCode}>
               <div className="field full">
                 <label>Email</label>
                 <input
@@ -148,7 +163,7 @@ export default function SignInModal({
                 type="submit"
                 disabled={!email || busy}
               >
-                {busy ? "Sending…" : "Send me a code"} <span className="arr">→</span>
+                {busy ? "Checking…" : "Send me a code"} <span className="arr">→</span>
               </button>
             </form>
 
@@ -167,11 +182,7 @@ export default function SignInModal({
           <>
             <h2 className="signin-title">Check your <em>inbox</em>.</h2>
             <p className="signin-sub">
-              We sent a sign-in link and a 6-digit code to <strong>{email}</strong>.
-              <br />
-              <span className="signin-hint">
-                Tap the link from your laptop, OR enter the code below from anywhere.
-              </span>
+              Your sign-in code is on the way to <strong>{email}</strong>. Enter it below.
             </p>
 
             <form className="signin-form" onSubmit={submitCode}>
@@ -240,6 +251,35 @@ export default function SignInModal({
               }}
             >
               Use a different email
+            </button>
+          </>
+        )}
+
+        {stage === "not-recognized" && (
+          <>
+            <h2 className="signin-title">
+              We don&apos;t see your <em>file</em>.
+            </h2>
+            <p className="signin-sub">
+              There&apos;s no application from <strong>{email}</strong>. Either you
+              haven&apos;t applied yet, or you applied with a different email.
+            </p>
+
+            <button
+              className="btn-gold signin-cta"
+              onClick={() => { onClose(); onApply(); }}
+              style={{ width: "100%", justifyContent: "center" }}
+            >
+              Begin your application <span className="arr">→</span>
+            </button>
+
+            <div className="signin-divider"><span>or</span></div>
+
+            <button
+              className="signin-apply"
+              onClick={() => { setStage("email"); setError(null); }}
+            >
+              <span>Try a different email →</span>
             </button>
           </>
         )}
