@@ -1,0 +1,26 @@
+name: Cron — purge-photos
+
+# Daily at 10:00 UTC (03:00 PT). Deletes photos from Supabase
+# Storage for applications that have been declined or withdrawn
+# for at least 90 days. Honors the "we will not retain your
+# photo beyond ninety days" promise in the decline email.
+#
+# Trigger manually from the Actions tab → "Run workflow".
+
+on:
+  schedule:
+    - cron: '0 10 * * *'
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hit /api/cron/purge-photos
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          curl --fail-with-body -sS \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            -w "\nHTTP %{http_code}\n" \
+            "https://clubdivinity.com/api/cron/purge-photos"

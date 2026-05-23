@@ -1,0 +1,25 @@
+name: Cron — event-reminders
+
+# Daily at 16:00 UTC (09:00 PT). Finds events 14 days away and
+# sends the "Fourteen nights" reminder email to active members
+# who haven't bought a ticket yet.
+#
+# Trigger manually from the Actions tab → "Run workflow".
+
+on:
+  schedule:
+    - cron: '0 16 * * *'
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hit /api/cron/event-reminders
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          curl --fail-with-body -sS \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            -w "\nHTTP %{http_code}\n" \
+            "https://clubdivinity.com/api/cron/event-reminders"

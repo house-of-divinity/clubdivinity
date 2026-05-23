@@ -1,0 +1,25 @@
+name: Cron — event-addresses
+
+# Hourly. Finds events 47-48 hours away and sends the venue
+# address email to every ticket holder. Idempotent — skips
+# tickets that already got the address email.
+#
+# Trigger manually from the Actions tab → "Run workflow".
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hit /api/cron/event-addresses
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          curl --fail-with-body -sS \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            -w "\nHTTP %{http_code}\n" \
+            "https://clubdivinity.com/api/cron/event-addresses"
