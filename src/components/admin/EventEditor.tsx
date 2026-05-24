@@ -1,7 +1,9 @@
 "use client";
 
-// Form to edit a single event. All fields are optional except
-// roman + name + starts_at. Save POSTs to /api/admin/events/[id].
+// Form for both creating + editing an event.
+//   - event=null → "Create new event" mode → POSTs to /api/admin/events
+//   - event provided → edit mode → PATCHes /api/admin/events/[id]
+// All fields are optional except roman + name + starts_at.
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -40,24 +42,25 @@ function toLocalDateTimeInput(iso: string): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-export default function EventEditor({ event }: { event: EventRow }) {
+export default function EventEditor({ event }: { event: EventRow | null }) {
   const router = useRouter();
+  const isNew = event === null;
   const [form, setForm] = useState({
-    roman: event.roman,
-    name: event.name,
-    tagline: event.tagline ?? "",
-    startsAtLocal: toLocalDateTimeInput(event.starts_at),
-    locationCity: event.location_city ?? "Las Vegas",
-    ticketUrl: event.ticket_url ?? "",
-    capacityLabel: event.capacity_label ?? "",
-    capacitySeats: event.capacity_souls?.toString() ?? "",
-    hosts: (event.hosts ?? []).join(", "),
-    status: event.status,
-    posterUrl: event.poster_url ?? "",
-    venueName: event.venue_name ?? "",
-    venueAddress: event.venue_address ?? "",
-    venueCity: event.venue_city ?? "",
-    venueState: event.venue_state ?? "",
+    roman: event?.roman ?? "",
+    name: event?.name ?? "",
+    tagline: event?.tagline ?? "",
+    startsAtLocal: event ? toLocalDateTimeInput(event.starts_at) : "",
+    locationCity: event?.location_city ?? "Las Vegas",
+    ticketUrl: event?.ticket_url ?? "",
+    capacityLabel: event?.capacity_label ?? "",
+    capacitySeats: event?.capacity_souls?.toString() ?? "",
+    hosts: event ? (event.hosts ?? []).join(", ") : "Madison Wilde, Bree Sky",
+    status: event?.status ?? "upcoming",
+    posterUrl: event?.poster_url ?? "",
+    venueName: event?.venue_name ?? "",
+    venueAddress: event?.venue_address ?? "",
+    venueCity: event?.venue_city ?? "",
+    venueState: event?.venue_state ?? "",
   });
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -74,31 +77,41 @@ export default function EventEditor({ event }: { event: EventRow }) {
     setError(null);
     setSaved(false);
     try {
-      const res = await fetch(`/api/admin/events/${event.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          roman: form.roman.trim(),
-          name: form.name.trim(),
-          tagline: form.tagline.trim() || null,
-          startsAt: new Date(form.startsAtLocal).toISOString(),
-          locationCity: form.locationCity.trim(),
-          ticketUrl: form.ticketUrl.trim() || null,
-          capacityLabel: form.capacityLabel.trim() || null,
-          capacitySeats: form.capacitySeats ? Number(form.capacitySeats) : null,
-          hosts: form.hosts.split(",").map((s) => s.trim()).filter(Boolean),
-          status: form.status,
-          posterUrl: form.posterUrl.trim() || null,
-          venueName: form.venueName.trim() || null,
-          venueAddress: form.venueAddress.trim() || null,
-          venueCity: form.venueCity.trim() || null,
-          venueState: form.venueState.trim() || null,
-        }),
-      });
+      const payload = {
+        roman: form.roman.trim(),
+        name: form.name.trim(),
+        tagline: form.tagline.trim() || null,
+        startsAt: new Date(form.startsAtLocal).toISOString(),
+        locationCity: form.locationCity.trim(),
+        ticketUrl: form.ticketUrl.trim() || null,
+        capacityLabel: form.capacityLabel.trim() || null,
+        capacitySeats: form.capacitySeats ? Number(form.capacitySeats) : null,
+        hosts: form.hosts.split(",").map((s) => s.trim()).filter(Boolean),
+        status: form.status,
+        posterUrl: form.posterUrl.trim() || null,
+        venueName: form.venueName.trim() || null,
+        venueAddress: form.venueAddress.trim() || null,
+        venueCity: form.venueCity.trim() || null,
+        venueState: form.venueState.trim() || null,
+      };
+      const res = await fetch(
+        isNew ? "/api/admin/events" : `/api/admin/events/${event!.id}`,
+        {
+          method: isNew ? "POST" : "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        },
+      );
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body?.error?.message || "Save failed");
-      setSaved(true);
-      router.refresh();
+      if (isNew && body?.id) {
+        // Land on the newly created event's edit page so the
+        // admin can continue tweaking + see the saved state.
+        router.push(`/admin/events/${body.id}`);
+      } else {
+        setSaved(true);
+        router.refresh();
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Save failed");
     } finally {
@@ -267,7 +280,7 @@ export default function EventEditor({ event }: { event: EventRow }) {
           className="ee-btn ee-btn-save"
           disabled={busy}
         >
-          {busy ? "Saving…" : "Save changes"}
+          {busy ? "Saving…" : (isNew ? "Create event" : "Save changes")}
         </button>
         {saved && (
           <span

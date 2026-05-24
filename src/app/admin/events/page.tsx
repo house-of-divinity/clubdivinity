@@ -19,9 +19,21 @@ export default async function EventsPage() {
 
   return (
     <>
-      <div className="admin-page-head">
-        <h1>Events.</h1>
-        <div className="aph-sub">{events?.length ?? 0} on the calendar</div>
+      <div
+        className="admin-page-head"
+        style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}
+      >
+        <div>
+          <h1>Events.</h1>
+          <div className="aph-sub">{events?.length ?? 0} on the calendar</div>
+        </div>
+        <Link
+          href="/admin/events/new"
+          className="btn-gold"
+          style={{ textDecoration: "none" }}
+        >
+          + New event <span className="arr">→</span>
+        </Link>
       </div>
 
       {events && events.length > 0 ? (
@@ -87,32 +99,12 @@ export default async function EventsPage() {
         </div>
       ) : (
         <div className="admin-empty">
-          No events on the calendar. Seed one in the SQL editor.
+          No events on the calendar yet.{" "}
+          <Link href="/admin/events/new" style={{ color: "var(--gold)" }}>
+            Create the first one →
+          </Link>
         </div>
       )}
-
-      <div
-        style={{
-          marginTop: 32,
-          padding: "20px 24px",
-          border: ".5px solid var(--line)",
-          color: "var(--ink-mute)",
-          fontFamily: "var(--font-display)",
-          fontStyle: "italic",
-          fontSize: 16,
-          lineHeight: 1.6,
-        }}
-      >
-        To add a <em>new</em> event: open Supabase →{" "}
-        <Link
-          href="https://supabase.com/dashboard/project/dyqyabqbmrrbetmqlnfj/editor"
-          style={{ color: "var(--gold)" }}
-        >
-          Table Editor → events
-        </Link>
-        {" "}→ Insert row. The new-event form lands in a later session — for now,
-        clicking any card above opens the full editor.
-      </div>
     </>
   );
 }
