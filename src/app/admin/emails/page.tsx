@@ -1,10 +1,10 @@
 // /admin/emails — list of lifecycle templates (built-in) + any
-// custom broadcast templates admins have created. Each one shows
-// whether it's customised + currently enabled, with a link into the
-// editor.
+// custom broadcast templates admins have created. Each row has an
+// inline ON/OFF toggle that flips `enabled` without leaving the page.
 
 import Link from "next/link";
 import { loadAllTemplatesForAdmin } from "@/lib/email/templates-admin";
+import EmailListRow from "@/components/admin/EmailListRow";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +32,15 @@ export default async function EmailsPage() {
       <div className="emails-layout" style={{ gridTemplateColumns: "1fr" }}>
         <div className="email-list">
           {builtIns.map((t) => (
-            <EmailListItem key={t.id} t={t} />
+            <EmailListRow
+              key={t.id}
+              id={t.id}
+              label={t.label}
+              trigger={t.trigger}
+              hasOverride={t.hasOverride}
+              enabled={t.enabled}
+              updatedAt={t.updatedAt}
+            />
           ))}
         </div>
       </div>
@@ -46,7 +54,15 @@ export default async function EmailsPage() {
             <div className="admin-empty">No custom emails yet.</div>
           )}
           {customs.map((t) => (
-            <EmailListItem key={t.id} t={t} />
+            <EmailListRow
+              key={t.id}
+              id={t.id}
+              label={t.label}
+              trigger={t.trigger}
+              hasOverride={t.hasOverride}
+              enabled={t.enabled}
+              updatedAt={t.updatedAt}
+            />
           ))}
         </div>
       </div>
@@ -66,57 +82,4 @@ export default async function EmailsPage() {
       </div>
     </>
   );
-}
-
-function EmailListItem({
-  t,
-}: {
-  t: Awaited<ReturnType<typeof loadAllTemplatesForAdmin>>[number];
-}) {
-  let stateLabel: string;
-  let stateColor: string;
-  if (!t.enabled) {
-    stateLabel = "✕ Silenced";
-    stateColor = "var(--wine)";
-  } else if (t.hasOverride) {
-    stateLabel = t.updatedAt
-      ? `✦ Customised · edited ${relative(t.updatedAt)}`
-      : "✦ Customised";
-    stateColor = "var(--gold)";
-  } else {
-    stateLabel = "Default copy";
-    stateColor = "var(--ink-dim)";
-  }
-
-  return (
-    <Link
-      href={`/admin/emails/${encodeURIComponent(t.id)}`}
-      className="email-list-item"
-      style={{ textDecoration: "none", color: "inherit" }}
-    >
-      <div className="eli-name">{t.label}</div>
-      <div className="eli-trigger">{t.trigger}</div>
-      <div
-        style={{
-          marginTop: 8,
-          fontFamily: "var(--font-mono)",
-          fontSize: 10,
-          letterSpacing: ".18em",
-          textTransform: "uppercase",
-          color: stateColor,
-        }}
-      >
-        {stateLabel}
-      </div>
-    </Link>
-  );
-}
-
-function relative(iso: string): string {
-  const ms = Date.now() - new Date(iso).getTime();
-  const d = Math.floor(ms / 86_400_000);
-  if (d > 0) return `${d}d ago`;
-  const h = Math.floor(ms / 3_600_000);
-  if (h > 0) return `${h}h ago`;
-  return "just now";
 }

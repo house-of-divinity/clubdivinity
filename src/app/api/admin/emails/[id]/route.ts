@@ -19,10 +19,13 @@ import { TEMPLATES } from "@/lib/email/templates-meta";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+// All content fields are optional so the list page can flip just the
+// `enabled` toggle without sending the full body. The editor still
+// sends subject/headline/body together on save.
 const Body = z.object({
-  subject: z.string().trim().min(1).max(300),
-  headline: z.string().trim().min(1).max(300),
-  body: z.string().trim().min(1).max(10_000),
+  subject: z.string().trim().min(1).max(300).optional(),
+  headline: z.string().trim().min(1).max(300).optional(),
+  body: z.string().trim().min(1).max(10_000).optional(),
   enabled: z.boolean().optional(),
   label: z.string().trim().min(1).max(120).optional(),
   triggerDescription: z.string().trim().min(1).max(400).optional(),
@@ -67,31 +70,58 @@ export async function PATCH(
   const server = await createSupabaseServerClient();
   const { data: { user } } = await server.auth.getUser();
 
-  const upsertPayload: Record<string, unknown> = {
-    id,
-    subject: parsed.data.subject,
-    headline: parsed.data.headline,
-    body: parsed.data.body,
-    updated_by: user?.id ?? null,
-    is_custom: isCustomExisting,
-  };
-  if (parsed.data.enabled !== undefined) {
-    upsertPayload.enabled = parsed.data.enabled;
-  }
-  // label + trigger_description only meaningful on custom rows.
-  if (isCustomExisting) {
-    if (parsed.data.label !== undefined) {
-      upsertPayload.label = parsed.data.label;
-    }
-    if (parsed.data.triggerDescription !== undefined) {
-      upsertPayload.trigger_description = parsed.data.triggerDescription;
-    }
-  }
-
-  const { error: upsertErr } = await admin
+  // See if a row already exists. PATCH supports partial updates —
+  // the list page only sends `enabled` when flipping the toggle,
+  // the editor sends subject/headline/body together. If we're about
+  // to insert a brand-new row for a built-in (toggle flipped before
+  // any edit), fill in subject/headline/body from the in-code defaults
+  // so the NOT NULL columns are satisfied.
+  const { data: existing } = await admin
     .from("email_templates")
-    .upsert(upsertPayload);
-  if (upsertErr) return err(500, "UPSERT", upsertErr.message);
+    .select("id")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (existing) {
+    const updatePayload: Record<string, unknown> = {
+      updated_by: user?.id ?? null,
+    };
+    if (parsed.data.subject  !== undefined) updatePayload.subject  = parsed.data.subject;
+    if (parsed.data.headline !== undefined) updatePayload.headline = parsed.data.headline;
+    if (parsed.data.body     !== undefined) updatePayload.body     = parsed.data.body;
+    if (parsed.data.enabled  !== undefined) updatePayload.enabled  = parsed.data.enabled;
+    if (isCustomExisting) {
+      if (parsed.data.label              !== undefined) updatePayload.label               = parsed.data.label;
+      if (parsed.data.triggerDescription !== undefined) updatePayload.trigger_description = parsed.data.triggerDescription;
+    }
+
+    const { error: updErr } = await admin
+      .from("email_templates")
+      .update(updatePayload)
+      .eq("id", id);
+    if (updErr) return err(500, "UPDATE", updErr.message);
+  } else {
+    // No row yet — only possible for built-ins (customs always have a
+    // row from the POST that created them). Pull defaults from
+    // templates-meta.ts so the insert satisfies the NOT NULL columns.
+    if (!isBuiltIn) return err(404, "NOT_FOUND", "Unknown template id");
+    const meta = TEMPLATES[id as keyof typeof TEMPLATES];
+
+    const insertPayload: Record<string, unknown> = {
+      id,
+      subject:  parsed.data.subject  ?? meta.defaultSubject,
+      headline: parsed.data.headline ?? meta.defaultHeadline,
+      body:     parsed.data.body     ?? meta.defaultBody,
+      enabled:  parsed.data.enabled  ?? true,
+      is_custom: false,
+      updated_by: user?.id ?? null,
+    };
+
+    const { error: insErr } = await admin
+      .from("email_templates")
+      .insert(insertPayload);
+    if (insErr) return err(500, "INSERT", insErr.message);
+  }
 
   return NextResponse.json({ ok: true });
 }
