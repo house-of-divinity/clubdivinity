@@ -119,10 +119,10 @@ export default function EntranceGate({
           : h + Math.random() * 20 - 5;
         particles.push({
           x, y,
-          vx: (Math.random() - 0.5) * 0.06,
-          vy: -(Math.random() * 0.1 + 0.06),
+          vx: (Math.random() - 0.5) * 0.04,
+          vy: -(Math.random() * 0.07 + 0.04),
           r: 22 + Math.random() * 30,
-          rg: 0.020 + Math.random() * 0.030,
+          rg: 0.014 + Math.random() * 0.020,
           age: seedScreen ? Math.random() * 7000 : 0,
           life: 10000 + Math.random() * 9000,
           peak: 0.08 + Math.random() * 0.10,
@@ -149,9 +149,9 @@ export default function EntranceGate({
       const s = stateRef.current;
       void h;
 
-      if (now - lastSpawn > 55) {
+      if (now - lastSpawn > 80) {
         lastSpawn = now;
-        spawn(s.exiting ? 7 : 4);
+        spawn(s.exiting ? 7 : 3);
       }
 
       const exitBoost = s.exiting ? Math.min(1, s.exitT / 800) : 0;
@@ -176,8 +176,8 @@ export default function EntranceGate({
                  + Math.sin(p.y * 0.0030 + t * 0.7 + p.seedB) * 0.55;
         const ny = Math.cos(p.x * 0.0034 + t * 0.8 + p.seedB) * 0.40
                  + Math.cos(p.y * 0.0026 + t * 0.5 + p.seedA) * 0.20;
-        p.vx += nx * dt * 0.00050;
-        p.vy += ny * dt * 0.00020;
+        p.vx += nx * dt * 0.00035;
+        p.vy += ny * dt * 0.00014;
 
         if (mActive) {
           const dx = p.x - m.x;
@@ -192,7 +192,7 @@ export default function EntranceGate({
           }
         }
 
-        p.vy -= dt * 0.000030;
+        p.vy -= dt * 0.000020;
         p.vx *= 0.985;
         p.vy *= 0.992;
 
