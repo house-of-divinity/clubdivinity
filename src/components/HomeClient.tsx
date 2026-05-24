@@ -8,7 +8,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
-import { NEXT_EVENT, UPCOMING_EVENTS } from "@/lib/event";
+import type { Event } from "@/lib/event";
 import EntranceGate from "./EntranceGate";
 import Nav, { type Member } from "./Nav";
 import Hero from "./Hero";
@@ -31,7 +31,7 @@ type Application = {
   decidedAt: string | null;
 };
 
-export default function HomeClient() {
+export default function HomeClient({ event }: { event: Event }) {
   const router = useRouter();
   const [gateOpen, setGateOpen] = useState(true);
   const [replayKey, setReplayKey] = useState(0);
@@ -112,21 +112,19 @@ export default function HomeClient() {
         onReplayGate={replayGate}
       />
 
-      <Hero event={NEXT_EVENT} member={member} onApply={openApply} />
+      <Hero event={event} member={member} onApply={openApply} />
       <OrnamentDivider />
       <Performance />
       <OrnamentDivider />
       <EventSpotlight
-        event={NEXT_EVENT}
+        event={event}
         member={member}
         onApply={openApply}
         onSignIn={openSignIn}
       />
-      {UPCOMING_EVENTS.length > 1 && (
-        <>{/* future calendar stack */}</>
-      )}
+      {/* future calendar stack of additional upcoming events */}
       <OrnamentDivider />
-      <Whisper event={NEXT_EVENT} member={member} onApply={openApply} />
+      <Whisper event={event} member={member} onApply={openApply} />
       <Footer onOpenTerms={() => setTermsOpen(true)} />
 
       {signInOpen && (
