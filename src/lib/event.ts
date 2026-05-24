@@ -1,10 +1,10 @@
-// Event shape used by the public marketing components. The home
-// page server-renders this from the live `events` table (via
-// `loadHomeEvent` below) so admin changes flow through immediately.
-// NEXT_EVENT_FALLBACK is the last-resort default if the DB is
-// empty or the query fails.
-
-import { createSupabaseAdminClient } from "@/lib/supabase/server";
+// Event types + fallback. Pure module — no server imports — so
+// client components can safely `import type { Event }` from here
+// without dragging in next/headers or Supabase server code.
+//
+// The actual DB loader lives in src/app/page.tsx (server component
+// only) so the server-only Supabase code never leaks into the
+// client bundle.
 
 export type Event = {
   id: string;
@@ -42,55 +42,3 @@ export const NEXT_EVENT_FALLBACK: Event = {
   capacityNumber: 60,
   status: "upcoming",
 };
-
-// Load the next gathering for the public homepage. Picks the
-// soonest event whose status is upcoming OR sold-out (sold-out
-// events still need to show with the "at capacity" UI). Falls
-// back to the seeded VI · The Lovers if the table is empty.
-export async function loadHomeEvent(): Promise<Event> {
-  try {
-    const supabase = createSupabaseAdminClient();
-    const { data: row } = await supabase
-      .from("events")
-      .select(
-        "id, slug, roman, name, tagline, starts_at, location_city, ticket_url, poster_url, capacity_label, capacity_souls, status, hosts",
-      )
-      .in("status", ["upcoming", "sold-out"])
-      .order("starts_at", { ascending: true })
-      .limit(1)
-      .maybeSingle();
-
-    if (!row) return NEXT_EVENT_FALLBACK;
-
-    return {
-      id: row.id,
-      slug: row.slug,
-      roman: row.roman,
-      name: row.name,
-      tagline: row.tagline ?? undefined,
-      date: toPacificDate(row.starts_at),
-      city: row.location_city ?? "Las Vegas",
-      posterUrl: row.poster_url ?? undefined,
-      ticketUrl: row.ticket_url ?? undefined,
-      hosts: Array.isArray(row.hosts) ? row.hosts.join(" · ") : (row.hosts ?? undefined),
-      capacityLabel: row.capacity_label ?? undefined,
-      capacityNumber: row.capacity_souls ?? undefined,
-      status: row.status as Event["status"],
-    };
-  } catch {
-    return NEXT_EVENT_FALLBACK;
-  }
-}
-
-// Postgres timestamptz returns as UTC. Our formatters expect a
-// "YYYY-MM-DD" in the event's local (Pacific) timezone so the date
-// shown to visitors matches the actual gathering day, not the UTC
-// rollover.
-function toPacificDate(iso: string): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Los_Angeles",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date(iso));
-}

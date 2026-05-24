@@ -9,7 +9,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import PhotoUpload, { type PhotoState } from "./PhotoUpload";
-import { NEXT_EVENT } from "@/lib/event";
+import { NEXT_EVENT_FALLBACK as NEXT_EVENT } from "@/lib/event";
 import { nightsUntil } from "@/lib/format";
 
 const STEPS = [
