@@ -1,9 +1,10 @@
-// /admin/emails/:id — edit form for one template.
+// /admin/emails/:id — edit one template (built-in or custom).
 
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
-import { TEMPLATES, type TemplateId } from "@/lib/email/templates-meta";
+import type { TemplateId } from "@/lib/email/templates-meta";
+import { loadTemplateForAdmin } from "@/lib/email/templates-admin";
 import EmailEditor from "@/components/admin/EmailEditor";
 
 export const dynamic = "force-dynamic";
@@ -14,15 +15,26 @@ export default async function EditEmailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  if (!(id in TEMPLATES)) notFound();
-  const meta = TEMPLATES[id as TemplateId];
+  const tpl = await loadTemplateForAdmin(id);
+  if (!tpl) notFound();
 
+  // For built-ins, fetch the override row separately so the editor
+  // shows current saved subject/headline/body (not the defaults).
+  // For custom templates, the loader already used the DB row as the
+  // initial values, so this is a no-op.
   const supabase = createSupabaseAdminClient();
   const { data: override } = await supabase
     .from("email_templates")
-    .select("subject, headline, body, updated_at")
+    .select("subject, headline, body, enabled")
     .eq("id", id)
     .maybeSingle();
+
+  const initial = {
+    subject:  override?.subject  ?? tpl.defaultSubject,
+    headline: override?.headline ?? tpl.defaultHeadline,
+    body:     override?.body     ?? tpl.defaultBody,
+  };
+  const initialEnabled = override?.enabled ?? true;
 
   return (
     <>
@@ -34,19 +46,27 @@ export default async function EditEmailPage({
         >
           ← Back to emails
         </Link>
-        <h1 style={{ marginTop: 8 }}>{meta.label}.</h1>
-        <div className="aph-sub">{meta.trigger}</div>
+        <h1 style={{ marginTop: 8 }}>{tpl.label}.</h1>
+        <div className="aph-sub">{tpl.trigger}</div>
       </div>
 
       <EmailEditor
-        templateId={id as TemplateId}
-        initial={{
-          subject: override?.subject ?? meta.defaultSubject,
-          headline: override?.headline ?? meta.defaultHeadline,
-          body: override?.body ?? meta.defaultBody,
-        }}
+        templateId={tpl.id}
+        isCustom={tpl.isCustom}
+        initialLabel={tpl.label}
+        initialTrigger={tpl.trigger}
+        initial={initial}
+        initialEnabled={initialEnabled}
         isOverridden={!!override}
-        meta={meta}
+        meta={{
+          id: tpl.id as TemplateId,
+          label: tpl.label,
+          trigger: tpl.trigger,
+          vars: tpl.vars,
+          defaultSubject: tpl.defaultSubject,
+          defaultHeadline: tpl.defaultHeadline,
+          defaultBody: tpl.defaultBody,
+        }}
       />
     </>
   );

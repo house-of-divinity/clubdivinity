@@ -60,9 +60,30 @@ export async function sendEmail(args: SendArgs): Promise<string | null> {
   const supabase = createSupabaseAdminClient();
   const { data: override } = await supabase
     .from("email_templates")
-    .select("subject, headline, body")
+    .select("subject, headline, body, enabled")
     .eq("id", args.template)
     .maybeSingle();
+
+  // Admin can silence a template without deleting it. If disabled
+  // we log skipped and bail before contacting Resend.
+  if (override && override.enabled === false) {
+    try {
+      await supabase.from("email_log").insert({
+        to_email: realTo,
+        template: args.template,
+        subject: override.subject || TEMPLATES[args.template as TemplateId]?.defaultSubject || "(disabled)",
+        application_id: "applicationId" in args ? args.applicationId ?? null : null,
+        member_id: "memberId" in args ? args.memberId ?? null : null,
+        event_id: "eventId" in args ? args.eventId ?? null : null,
+        status: "skipped",
+        provider_id: null,
+        error: null,
+      });
+    } catch {
+      /* swallow */
+    }
+    return null;
+  }
 
   const { node, subject } = override
     ? renderOverride(args, override)

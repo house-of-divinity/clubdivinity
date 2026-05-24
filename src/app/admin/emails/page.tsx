@@ -1,66 +1,114 @@
-// /admin/emails — list of all 7 lifecycle templates.
-// Each one shows whether it's currently customised (override
-// exists) or running on the default copy. Click → edit.
+// /admin/emails — list of lifecycle templates (built-in) + any
+// custom broadcast templates admins have created. Each one shows
+// whether it's customised + currently enabled, with a link into the
+// editor.
 
 import Link from "next/link";
-import { createSupabaseAdminClient } from "@/lib/supabase/server";
-import { TEMPLATES, TEMPLATE_IDS } from "@/lib/email/templates-meta";
+import { loadAllTemplatesForAdmin } from "@/lib/email/templates-admin";
 
 export const dynamic = "force-dynamic";
 
 export default async function EmailsPage() {
-  const supabase = createSupabaseAdminClient();
-  const { data: overrides } = await supabase
-    .from("email_templates")
-    .select("id, updated_at");
+  const all = await loadAllTemplatesForAdmin();
+  const builtIns = all.filter((t) => !t.isCustom);
+  const customs  = all.filter((t) =>  t.isCustom);
 
-  const overrideMap = new Map(
-    (overrides ?? []).map((o) => [o.id, o.updated_at as string]),
-  );
+  const customisedCount = builtIns.filter((t) => t.hasOverride).length;
+  const disabledCount   = all.filter((t) => !t.enabled).length;
 
   return (
     <>
       <div className="admin-page-head">
         <h1>Emails.</h1>
         <div className="aph-sub">
-          {TEMPLATE_IDS.length} lifecycle templates · {overrideMap.size} customised
+          {builtIns.length} lifecycle · {customs.length} custom
+          {" · "}
+          {customisedCount} customised
+          {disabledCount > 0 && <> · {disabledCount} silenced</>}
         </div>
       </div>
 
+      <div className="admin-section-h">Lifecycle templates</div>
       <div className="emails-layout" style={{ gridTemplateColumns: "1fr" }}>
         <div className="email-list">
-          {TEMPLATE_IDS.map((id) => {
-            const meta = TEMPLATES[id];
-            const overridden = overrideMap.get(id);
-            return (
-              <Link
-                key={id}
-                href={`/admin/emails/${id}`}
-                className="email-list-item"
-                style={{ textDecoration: "none", color: "inherit" }}
-              >
-                <div className="eli-name">{meta.label}</div>
-                <div className="eli-trigger">{meta.trigger}</div>
-                <div
-                  style={{
-                    marginTop: 8,
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 10,
-                    letterSpacing: ".18em",
-                    textTransform: "uppercase",
-                    color: overridden ? "var(--gold)" : "var(--ink-dim)",
-                  }}
-                >
-                  {overridden
-                    ? `✦ Customised · edited ${relative(overridden)}`
-                    : "Default copy"}
-                </div>
-              </Link>
-            );
-          })}
+          {builtIns.map((t) => (
+            <EmailListItem key={t.id} t={t} />
+          ))}
         </div>
       </div>
+
+      <div className="admin-section-h" style={{ marginTop: 40 }}>
+        Custom broadcasts
+      </div>
+      <div className="emails-layout" style={{ gridTemplateColumns: "1fr" }}>
+        <div className="email-list">
+          {customs.length === 0 && (
+            <div className="admin-empty">No custom emails yet.</div>
+          )}
+          {customs.map((t) => (
+            <EmailListItem key={t.id} t={t} />
+          ))}
+        </div>
+      </div>
+
+      <div style={{ marginTop: 20 }}>
+        <Link
+          href="/admin/emails/new"
+          className="ad-btn ad-btn-a"
+          style={{
+            display: "inline-block",
+            textDecoration: "none",
+            padding: "12px 22px",
+          }}
+        >
+          + Create custom email
+        </Link>
+      </div>
     </>
+  );
+}
+
+function EmailListItem({
+  t,
+}: {
+  t: Awaited<ReturnType<typeof loadAllTemplatesForAdmin>>[number];
+}) {
+  let stateLabel: string;
+  let stateColor: string;
+  if (!t.enabled) {
+    stateLabel = "✕ Silenced";
+    stateColor = "var(--wine)";
+  } else if (t.hasOverride) {
+    stateLabel = t.updatedAt
+      ? `✦ Customised · edited ${relative(t.updatedAt)}`
+      : "✦ Customised";
+    stateColor = "var(--gold)";
+  } else {
+    stateLabel = "Default copy";
+    stateColor = "var(--ink-dim)";
+  }
+
+  return (
+    <Link
+      href={`/admin/emails/${encodeURIComponent(t.id)}`}
+      className="email-list-item"
+      style={{ textDecoration: "none", color: "inherit" }}
+    >
+      <div className="eli-name">{t.label}</div>
+      <div className="eli-trigger">{t.trigger}</div>
+      <div
+        style={{
+          marginTop: 8,
+          fontFamily: "var(--font-mono)",
+          fontSize: 10,
+          letterSpacing: ".18em",
+          textTransform: "uppercase",
+          color: stateColor,
+        }}
+      >
+        {stateLabel}
+      </div>
+    </Link>
   );
 }
 
