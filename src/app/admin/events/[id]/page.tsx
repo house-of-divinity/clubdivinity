@@ -7,6 +7,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import EventEditor from "@/components/admin/EventEditor";
+import DeleteEventButton from "@/components/admin/DeleteEventButton";
 
 export const dynamic = "force-dynamic";
 
@@ -45,6 +46,8 @@ export default async function EditEventPage({
       </div>
 
       <EventEditor event={event} />
+
+      <DeleteEventButton eventId={event.id} eventName={`${event.roman} · ${event.name}`} />
     </>
   );
 }
