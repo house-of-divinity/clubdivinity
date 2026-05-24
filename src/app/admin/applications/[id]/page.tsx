@@ -8,6 +8,7 @@ import { notFound } from "next/navigation";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import StatusActions from "@/components/admin/StatusActions";
 import NotesPanel from "@/components/admin/NotesPanel";
+import DeleteApplicationButton from "@/components/admin/DeleteApplicationButton";
 
 export const dynamic = "force-dynamic";
 
@@ -161,6 +162,8 @@ export default async function ApplicationDetail({
           </div>
 
           <NotesPanel applicationId={app.id} notes={notes ?? []} />
+
+          <DeleteApplicationButton applicationId={app.id} ref_={app.ref} />
         </aside>
       </div>
     </>
