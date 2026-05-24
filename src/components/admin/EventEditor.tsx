@@ -18,6 +18,7 @@ type EventRow = {
   starts_at: string;
   location_city: string | null;
   ticket_url: string | null;
+  ticketspice_form_id: number | null;  // for the hourly sync cron
   capacity_label: string | null;     // public display label
   capacity_souls: number | null;     // internal seat count (admin only)
   hosts: string[] | null;
@@ -53,6 +54,7 @@ export default function EventEditor({ event }: { event: EventRow | null }) {
     startsAtLocal: event ? toLocalDateTimeInput(event.starts_at) : "",
     locationCity: event?.location_city ?? "Las Vegas",
     ticketUrl: event?.ticket_url ?? "",
+    ticketspiceFormId: event?.ticketspice_form_id?.toString() ?? "",
     capacityLabel: event?.capacity_label ?? "",
     capacitySeats: event?.capacity_souls?.toString() ?? "",
     hosts: event ? (event.hosts ?? []).join(", ") : "Madison Wilde, Bree Sky",
@@ -85,6 +87,7 @@ export default function EventEditor({ event }: { event: EventRow | null }) {
         startsAt: new Date(form.startsAtLocal).toISOString(),
         locationCity: form.locationCity.trim(),
         ticketUrl: form.ticketUrl.trim() || null,
+        ticketspiceFormId: form.ticketspiceFormId.trim() ? Number(form.ticketspiceFormId.trim()) : null,
         capacityLabel: form.capacityLabel.trim() || null,
         capacitySeats: form.capacitySeats ? Number(form.capacitySeats) : null,
         hosts: form.hosts.split(",").map((s) => s.trim()).filter(Boolean),
@@ -204,12 +207,24 @@ export default function EventEditor({ event }: { event: EventRow | null }) {
         />
       </FormField>
 
-      <FormField label="Ticket URL" hint="TicketSpice (or future provider) link members tap to buy.">
+      <FormField label="Ticket URL" hint="TicketSpice link members tap to buy.">
         <input
           type="url"
           value={form.ticketUrl}
           onChange={(e) => set("ticketUrl", e.target.value)}
           placeholder="https://divinity.ticketspice.com/..."
+        />
+      </FormField>
+
+      <FormField
+        label="TicketSpice form ID"
+        hint="Numeric form ID from TicketSpice (look in the form URL or settings). Required for the hourly ticket sync. Leave blank to skip sync for this event."
+      >
+        <input
+          type="number"
+          value={form.ticketspiceFormId}
+          onChange={(e) => set("ticketspiceFormId", e.target.value)}
+          placeholder="12345"
         />
       </FormField>
 
