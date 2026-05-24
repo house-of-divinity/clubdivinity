@@ -13,6 +13,7 @@ const TABS = [
   { href: "/admin/applications", label: "Applications" },
   { href: "/admin/members",      label: "Members" },
   { href: "/admin/events",       label: "Events" },
+  { href: "/admin/emails",       label: "Emails" },
 ] as const;
 
 export default function AdminShell({
