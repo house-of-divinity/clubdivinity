@@ -32,6 +32,7 @@ type EventRow = {
 
 const STATUS_OPTIONS = [
   { id: "upcoming",  label: "Upcoming" },
+  { id: "sold-out",  label: "Sold out" },
   { id: "past",      label: "Past" },
   { id: "cancelled", label: "Cancelled" },
 ] as const;

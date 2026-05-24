@@ -60,8 +60,8 @@ export async function GET(req: Request) {
 
   const { data: events, error: evErr } = await supabase
     .from("events")
-    .select("id, slug, ticketspice_form_id, tickets_last_sync")
-    .eq("status", "upcoming")
+    .select("id, slug, ticketspice_form_id, tickets_last_sync, capacity_souls, status")
+    .in("status", ["upcoming", "sold-out"])
     .not("ticketspice_form_id", "is", null);
 
   if (evErr) {
@@ -81,6 +81,8 @@ export async function GET(req: Request) {
     fetched: number;
     inserted: number;
     matchedMembers: number;
+    soldOut?: boolean;
+    ticketsHeld?: number;
     error?: string;
   }> = [];
 
@@ -99,7 +101,29 @@ export async function GET(req: Request) {
       since,
     });
 
-    summary.push({ eventId: ev.id, formId, ...result });
+    // After syncing, check if we've crossed capacity. If yes AND
+    // the event isn't already marked sold-out/past/cancelled, flip
+    // it to sold-out so the website + emails reflect that.
+    let soldOut: boolean | undefined;
+    let ticketsHeld: number | undefined;
+    if (!result.error && ev.capacity_souls) {
+      const { count } = await supabase
+        .from("event_tickets")
+        .select("id", { count: "exact", head: true })
+        .eq("event_id", ev.id);
+      ticketsHeld = count ?? 0;
+      if (ticketsHeld >= ev.capacity_souls && ev.status === "upcoming") {
+        await supabase
+          .from("events")
+          .update({ status: "sold-out" })
+          .eq("id", ev.id);
+        soldOut = true;
+      } else {
+        soldOut = ev.status === "sold-out";
+      }
+    }
+
+    summary.push({ eventId: ev.id, formId, ...result, soldOut, ticketsHeld });
 
     // Stamp the last sync time even on partial failure (we'll
     // catch the missed window on the next cron run anyway).

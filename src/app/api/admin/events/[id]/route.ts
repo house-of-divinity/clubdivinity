@@ -21,7 +21,7 @@ const Body = z.object({
   capacityLabel: z.string().nullable(),
   capacitySeats: z.number().int().nonnegative().nullable(),
   hosts: z.array(z.string()),
-  status: z.enum(["upcoming", "past", "cancelled"]),
+  status: z.enum(["upcoming", "sold-out", "past", "cancelled"]),
   posterUrl: z.string().nullable(),
   venueName: z.string().nullable(),
   venueAddress: z.string().nullable(),
