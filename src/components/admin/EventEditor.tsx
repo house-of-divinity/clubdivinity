@@ -7,6 +7,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import PosterUpload from "./PosterUpload";
 
 type EventRow = {
   id: string;
@@ -213,14 +214,12 @@ export default function EventEditor({ event }: { event: EventRow | null }) {
       </FormField>
 
       <FormField
-        label="Poster URL"
-        hint="Path or URL to the event flier image. We'll add drag-drop upload here later."
+        label="Poster"
+        hint="Tap to upload. JPG, PNG, or WebP. Used on the website, in iMessage link previews, and in the optional email banner."
       >
-        <input
-          type="text"
+        <PosterUpload
           value={form.posterUrl}
-          onChange={(e) => set("posterUrl", e.target.value)}
-          placeholder="/assets/lovers-poster.jpeg"
+          onChange={(url) => set("posterUrl", url)}
         />
       </FormField>
 
