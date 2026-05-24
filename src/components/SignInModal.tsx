@@ -104,6 +104,10 @@ export default function SignInModal({
         type: "email",
       });
       if (error) throw error;
+      // On iPhone Safari the user is often scrolled mid-page when they
+      // open the sign-in modal. Snap back to the top so the post-login
+      // home page (or admin redirect) starts at the top.
+      window.scrollTo(0, 0);
       onClose();
       router.refresh();
     } catch (err) {
