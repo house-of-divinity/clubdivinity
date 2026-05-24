@@ -272,10 +272,7 @@ export default function EntranceGate({
           <span>An Invitation</span>
           <span className="gate-line" />
         </div>
-        <h1 className="gate-mark">Divinity</h1>
-        <div className="gate-sub">
-          <span>Performances like no other</span>
-        </div>
+        <h1 className="gate-mark" style={{ marginBottom: 64 }}>Divinity</h1>
         <button className="gate-enter" onClick={enter} disabled={exiting}>
           <span className="gate-enter-bg" />
           <span className="gate-enter-label">{exiting ? "Entering" : "Enter"}</span>
