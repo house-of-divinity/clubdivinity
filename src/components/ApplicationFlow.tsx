@@ -1,10 +1,7 @@
 "use client";
 
-// Multi-step membership application form. Mirrors the prototype's
-// 8-step flow (Type → Identity → Contact → Presence → Why You →
-// Referral → Attire → Submit). For now the submit handler just
-// shows the confirmation screen with a placeholder reference — the
-// real POST /api/applications wiring lands when we add the backend.
+// Multi-step membership application form. 7-step flow:
+// Type → Identity → Contact → Presence → Why You → Referral → Submit.
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -19,7 +16,6 @@ const STEPS = [
   { id: "presence", label: "Presence" },
   { id: "essay", label: "Why You" },
   { id: "referral", label: "Referral" },
-  { id: "attire", label: "Attire" },
   { id: "review", label: "Submit" },
 ] as const;
 
@@ -32,7 +28,6 @@ export type ApplicationData = {
   photo: PhotoState | null;
   essay: string;
   referral: string;
-  attireAck: boolean;
 };
 
 const INITIAL: ApplicationData = {
@@ -44,7 +39,6 @@ const INITIAL: ApplicationData = {
   photo: null,
   essay: "",
   referral: "",
-  attireAck: false,
 };
 
 export default function ApplicationFlow() {
@@ -88,8 +82,7 @@ export default function ApplicationFlow() {
       case 3: return !!data.photo;
       case 4: return data.essay.trim().length >= 60;
       case 5: return data.referral.trim().length >= 2;
-      case 6: return data.attireAck;
-      case 7: return true;
+      case 6: return true;
       default: return true;
     }
   })();
@@ -198,8 +191,7 @@ export default function ApplicationFlow() {
             : <StepPresenceCouple data={data} set={set} />)}
           {step === 4 && <StepEssay data={data} set={set} />}
           {step === 5 && <StepReferral data={data} set={set} />}
-          {step === 6 && <StepAttire data={data} set={set} />}
-          {step === 7 && <StepReview data={data} />}
+          {step === 6 && <StepReview data={data} />}
 
           {submitError && (
             <div
@@ -567,47 +559,10 @@ function StepReferral({ data, set }: StepProps) {
   );
 }
 
-function StepAttire({ data, set }: StepProps) {
-  return (
-    <>
-      <div className="app-step-eyebrow">07 · Attire</div>
-      <h2 className="app-step-title">About the <em>dress code</em>.</h2>
-      <p className="app-step-sub">
-        Our nights are styled. If you&apos;re accepted, you&apos;ll receive the full
-        dress guide with your invitation — two weeks before the door opens.
-      </p>
-
-      <div className="attire-note">
-        <div className="attire-note-mark">✦</div>
-        <div>
-          <div className="attire-note-title">Travel discreetly — change on arrival</div>
-          <div className="attire-note-body">
-            A private dressing room is on-site. Arrive in whatever you&apos;d like
-            to be seen in publicly; step into your night-self inside.
-          </div>
-        </div>
-      </div>
-
-      <button
-        type="button"
-        className={"check" + (data.attireAck ? " on" : "")}
-        onClick={() => set("attireAck", !data.attireAck)}
-        style={{ width: "100%", maxWidth: 520 }}
-      >
-        <div className="box" />
-        <div className="txt">
-          I understand
-          <small>I&apos;ll receive the full dress guide with my invitation.</small>
-        </div>
-      </button>
-    </>
-  );
-}
-
 function StepReview({ data }: { data: ApplicationData }) {
   return (
     <>
-      <div className="app-step-eyebrow">08 · Submit</div>
+      <div className="app-step-eyebrow">07 · Submit</div>
       <h2 className="app-step-title">One last <em>look</em>.</h2>
       <p className="app-step-sub">
         Confirm what you&apos;ve shared. Once submitted, your file enters review.
