@@ -12,6 +12,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { applicationSchema } from "@/lib/validations";
 import { generateRef } from "@/lib/ref";
 import { sendEmail } from "@/lib/email/send";
+import { notifyDiscord, newApplicationEmbed } from "@/lib/discord";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -149,6 +150,30 @@ export async function POST(req: Request) {
     });
   } catch (e) {
     console.error("[application-received] email failed:", e);
+  }
+
+  // ─── 8. Discord ping — admins get a notification in #divinity ─
+  // No-op if DISCORD_WEBHOOK_URL isn't set. Best-effort like email:
+  // a webhook outage shouldn't fail an application submission.
+  try {
+    const url = new URL(req.url);
+    const siteUrl =
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      `${url.protocol}//${url.host}`;
+    await notifyDiscord({
+      embeds: [newApplicationEmbed({
+        ref,
+        type: data.type,
+        p1Name: data.p1Name,
+        p2Name: data.p2Name ?? null,
+        city: data.city,
+        email: data.email,
+        applicationId: inserted.id,
+        siteUrl,
+      })],
+    });
+  } catch (e) {
+    console.error("[discord] notify failed:", e);
   }
 
   return NextResponse.json({ ref });
