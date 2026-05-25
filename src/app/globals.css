@@ -860,7 +860,11 @@ a{color:inherit;text-decoration:none}
   .admin-chip-dot{width:22px;height:22px;font-size:11px}
   .admin-chip-name{display:none}
   .admin-head-btn{padding:6px 10px;font-size:10px;letter-spacing:.14em}
-  .admin-head-close{display:none}
+  /* Keep the "back to public site" button on mobile, just collapse
+     to an arrow-only icon so we don't blow out the topbar width. */
+  .admin-head-close{padding:6px 10px;min-width:0}
+  .admin-head-close-label{display:none}
+  .admin-head-close-arrow{font-size:16px;line-height:1}
 
   /* Sidebar as a slide-in drawer */
   .admin-side{

@@ -79,8 +79,14 @@ export default function AdminShell({
           <button className="admin-head-btn" onClick={signOut}>
             Sign out
           </button>
-          <Link href="/" className="admin-head-btn admin-head-close">
-            ← Public site
+          <Link
+            href="/"
+            className="admin-head-btn admin-head-close"
+            aria-label="Back to public site"
+            title="Back to public site"
+          >
+            <span className="admin-head-close-arrow">←</span>
+            <span className="admin-head-close-label">Public site</span>
           </Link>
         </div>
       </header>
