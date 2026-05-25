@@ -16,12 +16,18 @@ export default async function HomePage() {
 async function loadHomeEvent(): Promise<Event> {
   try {
     const supabase = createSupabaseAdminClient();
+    // 12-hour grace window so the event still shows on its own day
+    // (and a few hours after door time for late-night refreshes).
+    // After that, it drops off and the next upcoming event takes over —
+    // even if an admin forgot to flip status from 'upcoming' to 'past'.
+    const cutoff = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
     const { data: row } = await supabase
       .from("events")
       .select(
         "id, slug, roman, name, tagline, starts_at, location_city, ticket_url, poster_url, capacity_label, capacity_souls, status, hosts",
       )
       .in("status", ["upcoming", "sold-out"])
+      .gte("starts_at", cutoff)
       .order("starts_at", { ascending: true })
       .limit(1)
       .maybeSingle();
