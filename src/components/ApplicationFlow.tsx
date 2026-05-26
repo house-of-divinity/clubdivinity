@@ -451,7 +451,7 @@ function StepPresenceSolo({ data, set }: StepProps) {
           value={data.photo}
           onChange={(p) => set("photo", p)}
         />
-        <div className="field-help">A candid, full-light photo within the last six months.</div>
+        <div className="field-help">A full-body, well-lit photo within the last six months.</div>
       </div>
     </>
   );
@@ -509,7 +509,7 @@ function StepPresenceCouple({ data, set }: StepProps) {
           value={data.photo}
           onChange={(p) => set("photo", p)}
         />
-        <div className="field-help">Well-lit photo within the last six months.</div>
+        <div className="field-help">A full-body, well-lit photo within the last six months.</div>
       </div>
     </>
   );
