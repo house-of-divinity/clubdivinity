@@ -79,7 +79,12 @@ export default function ApplicationFlow() {
         ? !!(data.p1Name && Number(data.p1Age) >= 21)
         : !!(data.p1Name && data.p2Name && Number(data.p1Age) >= 21 && Number(data.p2Age) >= 21);
       case 2: return /\S+@\S+\.\S+/.test(data.email) && data.phone.length >= 7;
-      case 3: return !!data.photo;
+      case 3: {
+        if (!data.photo) return false;
+        if (data.p1Socials.trim().length < 2) return false;
+        if (!isSolo && data.p2Socials.trim().length < 2) return false;
+        return true;
+      }
       case 4: return data.essay.trim().length >= 60;
       case 5: return data.referral.trim().length >= 2;
       case 6: return true;
@@ -416,22 +421,23 @@ function StepPresenceSolo({ data, set }: StepProps) {
   return (
     <>
       <div className="app-step-eyebrow">04 · Presence</div>
-      <h2 className="app-step-title">Show us your <em>world</em>.</h2>
+      <h2 className="app-step-title">Let us make sure you&apos;re <em>real</em>.</h2>
       <p className="app-step-sub">
-        A recent photo of you, and your socials if you&apos;d like to share them —
-        these help our curators understand your sensibility. Privately reviewed; never shared.
+        Any social media page where we can confirm you really exist —
+        FetLife, Instagram, OnlyFans, etc. Privately reviewed; never shared.
       </p>
 
       <div className="field-grid" style={{ marginBottom: 32 }}>
         <div className="field full">
           <label>
-            Lifestyle sites or socials <span className="opt">optional</span>
+            Social media <span className="req">*</span>
           </label>
           <input
             type="text"
-            placeholder="@handle, OnlyFans, SLS, etc."
+            placeholder="FetLife, Instagram, OnlyFans, etc."
             value={data.p1Socials}
             onChange={(e) => set("p1Socials", e.target.value)}
+            required
           />
         </div>
       </div>
@@ -455,10 +461,10 @@ function StepPresenceCouple({ data, set }: StepProps) {
   return (
     <>
       <div className="app-step-eyebrow">04 · Presence</div>
-      <h2 className="app-step-title">Show us your <em>world</em>.</h2>
+      <h2 className="app-step-title">Let us make sure you&apos;re <em>real</em>.</h2>
       <p className="app-step-sub">
-        One photo of the two of you, and any socials you&apos;d like to share —
-        these help our curators understand your sensibility. Privately reviewed; never shared.
+        Any social media page where we can confirm you really exist —
+        FetLife, Instagram, OnlyFans, etc. Privately reviewed; never shared.
       </p>
 
       <div className="couple-grid" style={{ marginBottom: 40 }}>
@@ -466,13 +472,14 @@ function StepPresenceCouple({ data, set }: StepProps) {
           <h4>Partner One</h4>
           <div className="field">
             <label>
-              Lifestyle sites or socials <span className="opt">optional</span>
+              Social media <span className="req">*</span>
             </label>
             <input
               type="text"
-              placeholder="@handle, OnlyFans, SLS, etc."
+              placeholder="FetLife, Instagram, OnlyFans, etc."
               value={data.p1Socials}
               onChange={(e) => set("p1Socials", e.target.value)}
+              required
             />
           </div>
         </div>
@@ -480,13 +487,14 @@ function StepPresenceCouple({ data, set }: StepProps) {
           <h4>Partner Two</h4>
           <div className="field">
             <label>
-              Lifestyle sites or socials <span className="opt">optional</span>
+              Social media <span className="req">*</span>
             </label>
             <input
               type="text"
-              placeholder="@handle, OnlyFans, SLS, etc."
+              placeholder="FetLife, Instagram, OnlyFans, etc."
               value={data.p2Socials}
               onChange={(e) => set("p2Socials", e.target.value)}
+              required
             />
           </div>
         </div>

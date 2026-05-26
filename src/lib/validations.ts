@@ -17,7 +17,10 @@ export const applicationSchema = z
     phone: z.string().trim().min(7, "Add a real number"),
     city: z.string().trim().min(1).default("Las Vegas"),
 
-    p1Socials: z.string().trim().optional().default(""),
+    // Socials are how we verify the applicant is real — at least one
+    // public-facing page where we can confirm they exist. Required
+    // for the primary applicant; for couples, required for both.
+    p1Socials: z.string().trim().min(2, "Required"),
     p2Socials: z.string().trim().optional().default(""),
 
     essay: z.string().trim().min(60, "Tell us a little more — 60 chars minimum"),
@@ -37,6 +40,13 @@ export const applicationSchema = z
           code: z.ZodIssueCode.custom,
           path: ["p2Age"],
           message: "Both ages required for a couple",
+        });
+      }
+      if (!v.p2Socials || v.p2Socials.length < 2) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["p2Socials"],
+          message: "Required",
         });
       }
     }
